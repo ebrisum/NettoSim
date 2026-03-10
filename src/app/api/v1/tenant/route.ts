@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "lib/db";
-import { supabaseAdmin } from "lib/supabase/server";
+import { getSupabaseAdmin } from "lib/supabase/server";
 import { withApiLog, TENANT_ID_HEADER } from "lib/api-log";
 
 async function getHandler(request: NextRequest) {
@@ -11,6 +11,7 @@ async function getHandler(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const supabaseAdmin = getSupabaseAdmin();
     const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !authUser?.id) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
@@ -88,3 +89,6 @@ async function getHandler(request: NextRequest) {
 }
 
 export const GET = withApiLog(getHandler);
+
+
+

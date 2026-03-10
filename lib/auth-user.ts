@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "lib/db";
-import { supabaseAdmin } from "lib/supabase/server";
+import { getSupabaseAdmin } from "lib/supabase/server";
 
 function parseBearerToken(request: NextRequest): string | null {
   const auth = request.headers.get("authorization") || "";
@@ -34,6 +34,7 @@ export async function requireAppUser(
     };
   }
 
+  const supabaseAdmin = getSupabaseAdmin();
   const { data, error: authError } = await supabaseAdmin.auth.getUser(token);
   const authUser = data?.user;
   if (authError || !authUser?.id || !authUser.email) {
@@ -87,3 +88,6 @@ export async function requireAppUser(
 
   return { error: null, user };
 }
+
+
+
