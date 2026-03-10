@@ -1,0 +1,277 @@
+// Prisma schema for belasting-sim - sessions, events, profiles, partners, and CRM flows.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Visitor {
+  id                 String       @id // client-generated persistent visitor id
+  profileType        String       @default("unknown")
+  profileSignals     Json?
+  preferredPartnerId String?
+  preferredPartner   Tenant?      @relation("PreferredPartnerForVisitor", fields: [preferredPartnerId], references: [id], onDelete: SetNull)
+  totalSessions      Int          @default(0)
+  firstSeenAt        DateTime     @default(now())
+  lastSeenAt         DateTime     @updatedAt
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  sessions           Session[]
+  appUser            AppUser?
+  contactLeads       ContactLead[]
+  partnerMatches     PartnerMatch[]
+
+  @@index([profileType])
+  @@index([preferredPartnerId])
+}
+
+model AppUser {
+  id             String         @id @default(cuid())
+  supabaseUserId String         @unique
+  email          String         @unique
+  displayName    String?
+  role           String         @default("user") // user | admin
+  visitorId      String?        @unique
+  visitor        Visitor?       @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  sessions       Session[]
+  savedScenarios SavedScenario[]
+  lifeEvents     UserLifeEvent[]
+  contactLeads   ContactLead[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([createdAt])
+}
+
+model Session {
+  id                   String       @id @default(cuid())
+  ipHash               String?      // hashed IP, never raw
+  fingerprintHash      String?      // optional browser/device hash (hashed server-side)
+  referrer             String?
+  userAgent            String?      @db.Text
+  tenantId             String?      // optional partner context (incoming tenant)
+  tenant               Tenant?      @relation("TenantSessions", fields: [tenantId], references: [id], onDelete: SetNull)
+  visitorId            String?
+  visitor              Visitor?     @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  appUserId            String?
+  appUser              AppUser?     @relation(fields: [appUserId], references: [id], onDelete: SetNull)
+  recommendedPartnerId String?
+  recommendedPartner   Tenant?      @relation("RecommendedPartnerForSession", fields: [recommendedPartnerId], references: [id], onDelete: SetNull)
+  profileType          String?
+  profileSignals       Json?
+  lastActiveAt         DateTime     @updatedAt // for live session detection
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  events               Event[]
+  simulations          Simulation[]
+  contactLeads         ContactLead[]
+  partnerMatches       PartnerMatch[]
+
+  @@index([lastActiveAt])
+  @@index([tenantId])
+  @@index([visitorId])
+  @@index([appUserId])
+  @@index([profileType])
+  @@index([recommendedPartnerId])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      String   // e.g. "page_view", "calculate", "toggle", "pattern_detected"
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([type, createdAt])
+}
+
+model Simulation {
+  id               String         @id @default(cuid())
+  sessionId        String
+  session          Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  paramsHash       String?        // optional hash of params for dedup
+  params           Json?          // sanitized calculation params
+  gross            Float?
+  net              Float?
+  effectiveRate    Float?
+  profileType      String?
+  profileSignals   Json?
+  matchedPartnerId String?
+  matchedPartner   Tenant?        @relation("MatchedPartnerForSimulation", fields: [matchedPartnerId], references: [id], onDelete: SetNull)
+  partnerScore     Float?
+  createdAt        DateTime       @default(now())
+  partnerMatches   PartnerMatch[]
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([profileType])
+  @@index([matchedPartnerId])
+}
+
+model Tenant {
+  id                     String        @id @default(cuid())
+  name                   String
+  slug                   String        @unique
+  isActive               Boolean       @default(true)
+  apiKeyHash             String?       // hashed API key for server verification
+  contactEmail           String?
+  primaryColor           String?
+  logoUrl                String?
+  customCss              String?       @db.Text
+  customConfig           Json?
+  showOnPartnerPage      Boolean       @default(false)
+  partnerPageOrder       Int           @default(0)
+  partnerDescription     String?       @db.Text
+  partnerTier            String        @default("standard") // featured, standard, hidden
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  users                  TenantUser[]
+  contextSessions        Session[]     @relation("TenantSessions")
+  recommendedForSessions Session[]     @relation("RecommendedPartnerForSession")
+  matchedSimulations     Simulation[]  @relation("MatchedPartnerForSimulation")
+  preferredByVisitors    Visitor[]     @relation("PreferredPartnerForVisitor")
+  contactLeads           ContactLead[] @relation("LeadPartner")
+  partnerMatches         PartnerMatch[]
+}
+
+model TenantUser {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email          String   // Supabase Auth user email
+  supabaseUserId String   @unique // auth.uid()
+  role           String   @default("viewer") // viewer | admin
+  createdAt      DateTime @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([supabaseUserId])
+}
+
+model SavedScenario {
+  id        String   @id @default(cuid())
+  appUserId String
+  appUser   AppUser  @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  label     String   @default("Saved scenario")
+  current   Json
+  proposed  Json
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appUserId, createdAt])
+}
+
+model UserLifeEvent {
+  id          String   @id @default(cuid())
+  appUserId   String
+  appUser     AppUser  @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  title       String
+  description String?  @db.Text
+  category    String?
+  eventDate   DateTime
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([appUserId, eventDate])
+}
+
+model ContactLead {
+  id             String    @id @default(cuid())
+  name           String
+  email          String
+  subject        String
+  message        String    @db.Text
+  source         String    @default("contact_form")
+  status         String    @default("new") // new, reviewed, contacted, archived
+  sessionId      String?
+  session        Session?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  visitorId      String?
+  visitor        Visitor?  @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  appUserId      String?
+  appUser        AppUser?  @relation(fields: [appUserId], references: [id], onDelete: SetNull)
+  partnerId      String?
+  partner        Tenant?   @relation("LeadPartner", fields: [partnerId], references: [id], onDelete: SetNull)
+  profileType    String?
+  profileSignals Json?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([source, createdAt])
+  @@index([profileType])
+  @@index([partnerId])
+}
+
+model PartnerMatch {
+  id           String      @id @default(cuid())
+  sessionId    String
+  session      Session     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  simulationId String?
+  simulation   Simulation? @relation(fields: [simulationId], references: [id], onDelete: SetNull)
+  visitorId    String?
+  visitor      Visitor?    @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+  tenantId     String
+  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profileType  String?
+  score        Float       @default(0)
+  reason       String?
+  createdAt    DateTime    @default(now())
+
+  @@index([sessionId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([visitorId, createdAt])
+  @@index([profileType, createdAt])
+}
+
+model Subscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  source       String   @default("signup_form")
+  tags         String[] @default([])
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  metadata     Json?
+}
+
+model EmailCampaign {
+  id              String    @id @default(cuid())
+  subject         String
+  body            String    @db.Text
+  recipientFilter Json
+  recipientCount  Int       @default(0)
+  status          String    @default("draft") // draft, scheduled, sent
+  scheduledFor    DateTime?
+  sentAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ApiLog {
+  id         String   @id @default(cuid())
+  endpoint   String
+  method     String
+  tenantId   String?
+  statusCode Int
+  responseMs Int
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  @@index([endpoint, createdAt])
+  @@index([tenantId, createdAt])
+}
+
+model AdminSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

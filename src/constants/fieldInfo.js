@@ -1,0 +1,30 @@
+/**
+ * Tooltip / info texts for form fields (Dutch).
+ */
+export const INFO = {
+  employment: "Uw bruto jaarsalaris uit loondienst, vóór belasting en premies. Dit staat op uw jaaropgave.",
+  zzpIncome: "Netto winst uit uw onderneming (omzet minus kosten). Fiscale aftrekposten worden automatisch berekend.",
+  urenOK: "U moet minimaal 1.225 uur per jaar aan uw onderneming besteden voor de zelfstandigenaftrek en startersaftrek.",
+  isStarter: "Geldt voor de eerste 5 jaar als ondernemer. Geeft €2.123 extra aftrek bovenop de zelfstandigenaftrek.",
+  hasPartner: "Een toeslagpartner beïnvloedt het recht op toeslagen. Samenwonend of getrouwd telt als partner.",
+  inc2: "Het bruto jaarsalaris van uw partner. Dit telt mee voor de berekening van toeslagen en heffingskortingen.",
+  pensioenPerc: "Percentage van het bruto salaris dat naar pensioen gaat. Verlaagt het belastbaar inkomen.",
+  hasKids: "Kinderen onder 18 geven recht op kinderbijslag, kindgebonden budget, IACK en mogelijk kinderopvangtoeslag.",
+  housing: "Huurders kunnen huurtoeslag ontvangen (max huur €900). Kopers profiteren van hypotheekrenteaftrek.",
+  rent: "De kale huurprijs per maand (zonder servicekosten). Huurtoeslag is mogelijk tot €900/maand.",
+  hypotheek: "Het totale hypotheekbedrag. De rente hierover is aftrekbaar in Box 1.",
+  rentePerc: "Het jaarlijkse rentepercentage van uw hypotheek.",
+  wozWaarde: "De WOZ-waarde van uw woning. Hierover betaalt u eigenwoningforfait (0,35%).",
+  isAOW: "Na de AOW-leeftijd betaalt u geen AOW-premie meer, waardoor schijf 1 lager is (19,07% i.p.v. 35,82%).",
+  duoSchuld: "Totale resterende studieschuld bij DUO. Aflossing is 4% van inkomen boven de draagkrachtvrije voet.",
+  provincie: "Uw provincie helpt ons om relevante adviseurs in uw regio aan te bevelen.",
+  box2Income: "Dividend of andere inkomsten uit aanmerkelijk belang (≥5% aandelen in een BV). Tarief: 24,5% tot €67.000, daarboven 33%.",
+  box3Spaargeld: "Totaal spaargeld op bankrekeningen. Fictief rendement 1,03% (2025). Heffingsvrij vermogen: €57.000 per persoon.",
+  box3Beleggingen: "Waarde van beleggingen (aandelen, crypto, onroerend goed excl. eigen woning). Fictief rendement 6,04%.",
+  box3Schulden: "Schulden in Box 3 (excl. hypotheek eigen woning en studieschuld). Verlagen de grondslag.",
+  wwwiaIncome: "Bruto jaaruitkering WW of WIA. Belast als Box 1 inkomen, maar er geldt GEEN arbeidskorting over dit deel.",
+  alimentatieBetaald: "Partneralimentatie die u betaalt. Dit is aftrekbaar van uw Box 1 inkomen. Kinderalimentatie is niet aftrekbaar.",
+  alimentatieOntvangen: "Partneralimentatie die u ontvangt. Dit is belastbaar inkomen in Box 1.",
+  lijfrentePremie: "Jaarlijkse inleg in een lijfrenteverzekering of banksparen. Aftrekbaar tot de jaarruimte (max €38.000). Verlaagt Box 1 inkomen.",
+  vermogen: "Uw totale vermogen (spaargeld + beleggingen - schulden) wordt getoetst bij toeslagen. Bij te hoog vermogen vervalt recht op zorgtoeslag, huurtoeslag of kindgebonden budget.",
+};
